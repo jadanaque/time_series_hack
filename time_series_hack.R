@@ -23,6 +23,10 @@ ggplot(train_df, aes(Datetime, Count)) + geom_line() +
 ggplot(train_df[1:2500, ], aes(Datetime, Count)) + geom_line() +
   geom_vline(xintercept = seq(ymd_hm("2012-08-25 00:00"), ymd_hm("2012-11-30 00:00"), by = "days"), col = 2, size = 0.1, linetype = 3)
 
+ggplot(train_df, aes(Datetime, Count)) + geom_line() +
+  coord_cartesian(xlim = c(ymd_hm("2014-01-01 00:00"), ymd_hm("2014-09-25 23:00")),
+                  ylim = c(0, 1250))  # explored many plots in this way, with different date ranges
+
 # Time series object ----
 traffic_ts <- ts(train_df$Count, frequency = 24)
 
@@ -74,6 +78,36 @@ pacf(diff(traffic_ts, 24), lag.max=240,
      xlab="Retardo")
 grid()
 abline(v = 1:5, col = 2, lty = 3)
+
+adf.test(diff(traffic_ts))
+adf.test(diff(traffic_ts), k = 24)
+adf.test(diff(traffic_ts), k = 0)
+
+# SARIMA model ----
+traffic_fit<-Arima(traffic_ts, order=c(0,1,2), seasonal = list(order = c(0,1,2), period=24))
+traffic_fit
+summary(traffic_fit)
+
+# Trying out different combinations of parameters
+arima_pars <- list(
+  list(c(0, 1, 2), c(0, 1, 2)),
+  list(c(1, 1, 2), c(1, 1, 2)),
+  list(c(2, 1, 2), c(2, 1, 2)),
+  list(c(2, 1, 0), c(2, 1, 0)),
+  list(c(2, 1, 1), c(2, 1, 1))
+)
+
+traffic_fit_l <- vector("list", length = length(arima_pars))
+
+results_df <- data.frame(model = as.character(arima_pars),
+                         AIC = numeric(length(arima_pars)),
+                         BIC = numeric(length(arima_pars)),
+                         MSE = numeric(length(arima_pars)))
+
+for(i in seq_along(arima_pars)){
+    #
+}
+
 
 # ARIMA(_, 1, _)(_,1,_)[24]
 #      (AR, Dif, MA)(AR, Dif, MA)
